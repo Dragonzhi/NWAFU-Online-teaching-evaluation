@@ -4,6 +4,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from dotenv import load_dotenv
 import time
 import random
 import tkinter as tk
@@ -14,20 +15,31 @@ from webdriver_manager.chrome import ChromeDriverManager
 import sys
 import os
 
+# 自动加载 .env 文件中的环境变量
+load_dotenv()
+
 # 创建主窗口
 root = tk.Tk()
 root.withdraw()  # 隐藏主窗口
 
 print("初始化完成...")
 
-# 使用 simpledialog 获取用户输入
-username = simpledialog.askstring("输入", "请输入学号：")
+# 支持环境变量配置（开发环境免输入）
+username = os.environ.get('NWAFU_USERNAME')
+password = os.environ.get('NWAFU_PASSWORD')
+target_url = os.environ.get('NWAFU_TARGET_URL')
+
+if not username:
+    username = simpledialog.askstring("输入", "请输入学号：")
+if not password:
+    password = simpledialog.askstring("输入", "请输入密码：", show='*')
+if not target_url:
+    target_url = simpledialog.askstring("输入", "请输入评教的地址：")
+
 print("username:", username)
-password = simpledialog.askstring("输入", "请输入密码：", show='*')
-print("password:", password)
-# 登录页面的 URL
+print("password: ***")  # 隐藏密码显示
+# 登录页面的 URL（固定值）
 login_url = 'https://newehall.nwafu.edu.cn/login'
-target_url = simpledialog.askstring("输入", "请输入评教的地址：")
 # target_url = "https://newehall.nwafu.edu.cn/jwapp/sys/jwwspj/*default/index.do?t_s=1749014041014&amp_sec_version_=1&gid_=VnhSRTRsRlgzN2ZvSmZ6WU95S29BRW1paHk4djhXZmhCTkJEVzM3dXA5elJIYTljajJuZU9KQzdYUWpJekNMbFByY1BvSCtUcHJsSXdEV2ZTVWVXbVE9PQ&EMAP_LANG=zh&THEME=millennium#/pj"
 
 comments = []
@@ -64,30 +76,45 @@ def run_evaluation():
             service = Service(ChromeDriverManager().install())
             print("使用动态获取的 ChromeDriver 完成")
     else:
-        # 开发环境
-        chromedriver_path = "C:\Program Files\Google\Chrome\Application\chromedriver.exe"
-        service = Service(chromedriver_path)
-        print("开发环境中使用指定的 ChromeDriver...")
+        # 开发环境，使用 webdriver_manager 自动下载匹配版本的驱动
+        os.environ['WDM_SOURCE_URL'] = "https://registry.npmmirror.com/-/binary/chromedriver"
+        service = Service(ChromeDriverManager().install())
+        print("开发环境中使用自动下载的 ChromeDriver...")
 
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
     try:
-        # 打开登录页面并登录
+        # 打开登录页面并登录（统一身份认证平台）
         driver.get(login_url)
-        username_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.NAME, 'username'))
-        )
-        password_input = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.NAME, 'password'))
+        time.sleep(2)  # 等待页面加载
+        
+        # 等待用户名输入框出现
+        username_input = WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.ID, 'username'))
         )
         username_input.send_keys(username)
+        
+        # 等待密码输入框出现
+        password_input = WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.ID, 'password'))
+        )
         password_input.send_keys(password)
-        login_button = WebDriverWait(driver, 10).until(
+        
+        # 点击登录按钮
+        login_button = WebDriverWait(driver, 15).until(
             EC.element_to_be_clickable((By.ID, 'login_submit'))
         )
-        login_button.click()
-        time.sleep(2)
-
+        driver.execute_script("arguments[0].click();", login_button)
+        
+        # 如果有验证码/二次验证，等待用户手动完成
+        input("请在浏览器中完成登录（包括验证码验证），登录成功后按回车继续...")
+        
+        # 检查登录结果
+        current_url = driver.current_url
+        print(f"当前页面URL: {current_url}")
+        if "统一身份认证" in driver.title:
+            print("检测到仍在登录页，请确认已成功登录")
+            
         # 进入目标页面
         driver.get(target_url)
         time.sleep(3)
@@ -191,7 +218,14 @@ def run_evaluation():
                 break
             time.sleep(5)
     except Exception as e:
+        import traceback
         print(f"操作出错: {e}")
+        try:
+            print(f"当前页面URL: {driver.current_url}")
+            print(f"当前页面标题: {driver.title}")
+            print(f"错误详情: {traceback.format_exc()}")
+        except:
+            pass
     finally:
         driver.quit()
 
