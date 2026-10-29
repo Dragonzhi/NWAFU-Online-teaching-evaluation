@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         NWAFU 网上评教辅助
 // @namespace    https://github.com/Dragonzhi/NWAFU-Online-teaching-evaluation
-// @version      2.2.1
-// @description  在已登录的评教页面填写问卷，默认只填不提交；支持自检以适配页面改版
+// @version      2.2.2
+// @description  在已登录的评教页面自动填写并提交问卷；支持全自动、自检和页面适配
 // @author       Dragonzhi
 // @updateURL    https://raw.githubusercontent.com/Dragonzhi/NWAFU-Online-teaching-evaluation/main/nwafu-eval.user.js
 // @downloadURL  https://raw.githubusercontent.com/Dragonzhi/NWAFU-Online-teaching-evaluation/main/nwafu-eval.user.js
@@ -19,7 +19,7 @@
   if (window.__NWAFU_EVAL_LOADED__) return;
   window.__NWAFU_EVAL_LOADED__ = true;
 
-  var VERSION = '2.2.1';
+  var VERSION = '2.2.2';
   var KEYS = {
     settings: 'nwafu-eval:settings:v3',
     history: 'nwafu-eval:history:v2',
