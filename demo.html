@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NWAFU 评教辅助 Demo</title>
+  <style>
+    body { margin: 0; padding: 24px 32px; font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; color: #1f2933; background: #f5f7fa; }
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .note { color: #52667a; margin: 0 0 18px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .tabs button { padding: 6px 12px; border: 1px solid #c6d0dc; background: #fff; border-radius: 6px; cursor: pointer; }
+    .tabs button.active { border-color: #2f7de1; color: #1e5aa8; }
+    #list { display: grid; gap: 10px; max-width: 720px; }
+    .bh-card { position: relative; padding: 14px 16px; background: #fff; border: 1px solid #dbe3ec; border-radius: 8px; cursor: pointer; }
+    .bh-card[data-status="已提交"] { opacity: .62; cursor: default; }
+    .bh-card .course { font-weight: 600; }
+    .bh-card .status { position: absolute; right: 14px; top: 14px; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: #fff5e6; color: #8a5b00; }
+    .bh-card[data-status="已提交"] .status { background: #edf8f1; color: #1f7a4d; }
+    .bh-paper-pile-dialog { position: fixed; z-index: 1000; top: 40px; left: 50%; transform: translateX(-50%); width: min(680px, calc(100vw - 40px)); max-height: calc(100vh - 80px); overflow: auto; padding: 20px 22px; background: #fff; border: 1px solid #c9d4e0; border-radius: 10px; box-shadow: 0 18px 48px rgba(15, 23, 42, .25); }
+    .bh-paper-pile-dialog h2 { margin: 0 0 14px; font-size: 17px; }
+    .question { padding: 10px 0; border-top: 1px solid #edf1f5; }
+    .q-title { margin-bottom: 6px; font-weight: 600; }
+    .question label { display: inline-flex; align-items: center; gap: 5px; margin-right: 18px; cursor: pointer; }
+    textarea { display: block; width: 100%; min-height: 64px; margin: 12px 0; padding: 8px; border: 1px solid #cfd8e3; border-radius: 6px; font: inherit; box-sizing: border-box; }
+    #submit { padding: 8px 18px; border: 0; border-radius: 6px; background: #2f7de1; color: #fff; cursor: pointer; font: inherit; }
+    .bh-dialog { position: fixed; z-index: 1001; top: 220px; left: 50%; transform: translateX(-50%); width: 300px; padding: 18px; background: #fff; border: 1px solid #c9d4e0; border-radius: 10px; box-shadow: 0 18px 48px rgba(15, 23, 42, .3); }
+    .bh-dialog button { margin-right: 8px; padding: 6px 14px; border: 1px solid #c6d0dc; border-radius: 6px; background: #fff; cursor: pointer; font: inherit; }
+    #confirm-ok { border-color: #2f7de1; color: #1e5aa8; }
+    #toast { position: fixed; z-index: 1002; left: 50%; bottom: 40px; transform: translateX(-50%); padding: 8px 16px; border-radius: 999px; background: #1f7a4d; color: #fff; display: none; }
+    #test-results { margin-top: 24px; padding: 12px; background: #0f172a; color: #d6e2f0; border-radius: 8px; white-space: pre-wrap; font: 12px/1.6 Consolas, monospace; }
+    #test-results[data-status="pass"] { border: 2px solid #22c55e; }
+    #test-results[data-status="fail"] { border: 2px solid #ef4444; }
+  </style>
+</head>
+<body>
+  <h1>网上评教（Demo）</h1>
+  <p class="note">这是本地模拟页，用来测试油猴脚本的识别、填写和提交流程；不是真实学校页面。</p>
+
+  <div class="tabs">
+    <button class="active">结果性评教</button>
+    <button>过程评教</button>
+  </div>
+
+  <div id="list">
+    <div class="bh-card bh-card-lv1" data-id="c1" data-status="未提交">
+      <div class="course">高等数学 - 张老师</div>
+      <span class="status">未提交</span>
+    </div>
+    <div class="bh-card bh-card-lv1" data-id="c2" data-status="未提交">
+      <div class="course">大学英语 - 李老师</div>
+      <span class="status">未提交</span>
+    </div>
+    <div class="bh-card bh-card-lv1" data-id="c3" data-status="未提交">
+      <div class="course">大学物理 - 王老师</div>
+      <span class="status">未提交</span>
+    </div>
+    <div class="bh-card bh-card-lv1" data-id="c4" data-status="已提交">
+      <div class="course">程序设计 - 赵老师</div>
+      <span class="status">已提交</span>
+    </div>
+    <div class="bh-card bh-card-lv1" data-id="c5" data-status="已提交">
+      <div class="course">体育 - 刘老师</div>
+      <span class="status">已提交</span>
+    </div>
+  </div>
+
+  <div id="dialog" class="bh-paper-pile-dialog" style="display:none">
+    <h2 id="course-title"></h2>
+    <div class="question">
+      <div class="q-title">1. 教学态度</div>
+      <label><input type="radio" name="q1" value="5"> 完全赞同</label>
+      <label><input type="radio" name="q1" value="4"> 基本赞同</label>
+      <label><input type="radio" name="q1" value="3"> 一般</label>
+    </div>
+    <div class="question">
+      <div class="q-title">2. 教学内容</div>
+      <label><input type="radio" name="q2" value="5"> 完全赞同</label>
+      <label><input type="radio" name="q2" value="4"> 基本赞同</label>
+      <label><input type="radio" name="q2" value="3"> 一般</label>
+    </div>
+    <div class="question">
+      <div class="q-title">3. 教学方法</div>
+      <label><input type="radio" name="q3" value="5"> 完全赞同</label>
+      <label><input type="radio" name="q3" value="4"> 基本赞同</label>
+      <label><input type="radio" name="q3" value="3"> 一般</label>
+    </div>
+    <div class="question">
+      <div class="q-title">4. 主观评价</div>
+      <textarea name="YLCS" placeholder="请填写评语"></textarea>
+      <textarea name="YLCS2">已有评语</textarea>
+    </div>
+    <button data-action="提交" id="submit">提交</button>
+  </div>
+
+  <div id="confirm" class="bh-dialog" style="display:none">
+    <p>确定提交这份问卷吗？</p>
+    <button id="confirm-ok">确定</button>
+    <button id="confirm-cancel">取消</button>
+  </div>
+
+  <div id="toast">提交成功</div>
+  <pre id="test-results" data-nwafu-eval-ignore hidden></pre>
+
+  <script src="./nwafu-eval.user.js"></script>
+  <script>
+    (function () {
+      var activeCard = null;
+
+      document.querySelectorAll('.bh-card').forEach(function (card) {
+        card.addEventListener('click', function () {
+          if (card.dataset.status === '已提交') return;
+          activeCard = card;
+          document.getElementById('course-title').textContent = card.querySelector('.course').textContent;
+          document.querySelectorAll('#dialog input[type="radio"]').forEach(function (radio) { radio.checked = false; });
+          document.querySelector('textarea[name="YLCS"]').value = '';
+          document.getElementById('dialog').style.display = 'block';
+        });
+      });
+
+      document.getElementById('submit').addEventListener('click', function (event) {
+        event.stopPropagation();
+        document.getElementById('confirm').style.display = 'block';
+      });
+
+      document.getElementById('confirm-ok').addEventListener('click', function (event) {
+        event.stopPropagation();
+        document.getElementById('confirm').style.display = 'none';
+        document.getElementById('dialog').style.display = 'none';
+        if (activeCard) {
+          activeCard.dataset.status = '已提交';
+          activeCard.querySelector('.status').textContent = '已提交';
+          activeCard = null;
+        }
+        var toast = document.getElementById('toast');
+        toast.style.display = 'block';
+        setTimeout(function () { toast.style.display = 'none'; }, 1500);
+      });
+
+      document.getElementById('confirm-cancel').addEventListener('click', function () {
+        document.getElementById('confirm').style.display = 'none';
+      });
+    })();
+
+    (async function () {
+      if (!new URLSearchParams(location.search).has('test')) return;
+
+      var results = [];
+      function record(name, pass, extra) {
+        results.push((pass ? 'PASS' : 'FAIL') + ': ' + name + (extra ? ' | ' + extra : ''));
+      }
+      function sleep(ms) { return new Promise(function (resolve) { setTimeout(resolve, ms); }); }
+      function waitFor(fn, timeout, interval) {
+        var limit = timeout == null ? 5000 : timeout;
+        var step = interval == null ? 80 : interval;
+        return new Promise(function (resolve, reject) {
+          var end = Date.now() + limit;
+          var timer = setInterval(function () {
+            try {
+              var value = fn();
+              if (value) { clearInterval(timer); resolve(value); return; }
+            } catch (err) { /* ignore */ }
+            if (Date.now() > end) { clearInterval(timer); reject(new Error('timeout')); }
+          }, step);
+        });
+      }
+
+      try {
+        var api = await waitFor(function () { return window.__NWAFU_EVAL__; }, 5000, 50);
+        record('API loaded', !!api);
+        record('list detected', api.getPageKind() === 'list', api.getPageKind());
+        record('pending count is 3', api.getPendingCandidates().length === 3, String(api.getPendingCandidates().length));
+
+        document.querySelector('.bh-card[data-id="c1"]').click();
+        await waitFor(function () { return api.getPageKind() === 'form'; }, 3000);
+        record('form detected', api.getPageKind() === 'form', api.getPageKind());
+
+        var fill = await api.fillCurrentForm();
+        record('three native groups filled', fill.filledNative === 3, JSON.stringify(fill));
+        record('one empty textarea filled', fill.filledAreas === 1, JSON.stringify(fill));
+        record('q1 chose 完全赞同', document.querySelector('input[name="q1"]:checked') && document.querySelector('input[name="q1"]:checked').value === '5');
+        record('q2 chose 完全赞同', document.querySelector('input[name="q2"]:checked') && document.querySelector('input[name="q2"]:checked').value === '5');
+        record('q3 chose 完全赞同', document.querySelector('input[name="q3"]:checked') && document.querySelector('input[name="q3"]:checked').value === '5');
+        record('empty textarea has value', document.querySelector('textarea[name="YLCS"]').value.length > 0);
+        record('existing textarea untouched', document.querySelector('textarea[name="YLCS2"]').value === '已有评语');
+
+        var check = api.selfCheck();
+        record('self-check found radios', check.nativeRadioGroups.length === 3, String(check.nativeRadioGroups.length));
+        record('self-check found textareas', check.textareas.length === 2, String(check.textareas.length));
+
+        api.setSettings({ confirmEach: false });
+        var submitted = await api.submitCurrentForm();
+        record('submit succeeded', !!(submitted && submitted.submitted), JSON.stringify(submitted));
+        await sleep(400);
+        record('dialog closed', document.getElementById('dialog').style.display === 'none');
+        record('card marked submitted', document.querySelector('.bh-card[data-id="c1"]').dataset.status === '已提交');
+        record('remaining pending is 2', api.getPendingCandidates().length === 2, String(api.getPendingCandidates().length));
+
+        var host = document.querySelector('#nwafu-eval-host');
+        var stopButton = host && host.shadowRoot.querySelector('[data-action="stop"]');
+        record('stop button clickable when idle', !!stopButton && !stopButton.disabled);
+
+        api.setSettings({ confirmEach: false, intervalMs: 0, maxCount: 5 });
+        record('pending items before batch', true, api.getPendingCandidates().map(function (el) {
+          return el.tagName + '.' + (typeof el.className === 'string' ? el.className : '') + ' | ' + el.textContent.replace(/\s+/g, ' ').trim();
+        }).join(' /// '));
+        await Promise.race([
+          api.runBatch(true),
+          sleep(12000).then(function () { throw new Error('batch timeout'); })
+        ]);
+        record('batch cleared pending', api.getPendingCandidates().length === 0, String(api.getPendingCandidates().length));
+        record('c2 submitted by batch', document.querySelector('.bh-card[data-id="c2"]').dataset.status === '已提交');
+        record('c3 submitted by batch', document.querySelector('.bh-card[data-id="c3"]').dataset.status === '已提交');
+        record('stop button clickable after batch', !!stopButton && !stopButton.disabled);
+        record('batch log tail', true, api.state.logLines.slice(-12).map(function (line) { return line.message; }).join(' || '));
+      } catch (err) {
+        results.push('FAIL: exception | ' + (err && err.stack ? err.stack : err));
+        if (window.__NWAFU_EVAL__) {
+          results.push('LOG: ' + window.__NWAFU_EVAL__.state.logLines.slice(-15).map(function (line) {
+            return line.message;
+          }).join(' || '));
+        }
+      }
+
+      var failed = results.some(function (line) { return line.indexOf('FAIL') === 0; });
+      var status = failed ? 'fail' : 'pass';
+      var output = document.getElementById('test-results');
+      output.hidden = false;
+      output.dataset.status = status;
+      output.textContent = results.join('\n');
+      document.title = 'TEST ' + status.toUpperCase();
+    })();
+  </script>
+</body>
+</html>
