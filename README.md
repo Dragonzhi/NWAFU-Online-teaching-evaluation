@@ -2,7 +2,7 @@
 
 西北农林科技大学网上评教的浏览器油猴脚本。登录、2FA、扫码和会话都交给浏览器本身；脚本只在**已登录的评教页面**操作 DOM，不接触账号密码。
 
-> 当前版本 v2.2.2。学校评教系统网址已变更，脚本不再绑死旧的 `jwwspj` 地址：匹配 `*.nwafu.edu.cn`，运行时按页面内容识别列表页/问卷页。识别不到时按 `Alt+Shift+P` 强制打开面板，用“自检 / 复制结构”导出页面结构再适配。
+> 当前版本 v2.2.3。学校评教系统网址已变更，脚本不再绑死旧的 `jwwspj` 地址：匹配 `*.nwafu.edu.cn`，运行时按页面内容识别列表页/问卷页。识别不到时按 `Alt+Shift+P` 强制打开面板，用“自检 / 复制结构”导出页面结构再适配。
 
 ### 2026-10 实测
 
@@ -67,7 +67,23 @@
 - **全自动停在提交确认**：看日志里有没有“已点击确认弹窗”。如果没有，提交确认按钮的文案可能不是“确定/确认”；在确认弹窗打开时跑一次自检，把结构发来。
 - **批量中途停止**：看面板日志；确保只开一个评教标签页。页面整页刷新后脚本会重新注入，但当前批次会中断。
 - **新网址**：`@match` 已放宽到 `*.nwafu.edu.cn`；如果换成其他域名，手动加 `@match`。
-- **更新**：文件头已配置 GitHub raw 的 `@updateURL/@downloadURL`，推送到 `main` 后生效；也可以发布到 GreasyFork 获得更稳定的自动更新。
+- **更新失败**：`raw.githubusercontent.com` 在国内可能不通；脚本已改用 jsDelivr，见下面的“更新”。
+
+## 更新
+
+脚本头已配置 jsDelivr（fastly 节点）的 `@updateURL/@downloadURL`，不再依赖 raw GitHub：
+
+```
+https://fastly.jsdelivr.net/gh/Dragonzhi/NWAFU-Online-teaching-evaluation@main/nwafu-eval.user.js
+```
+
+首次从 2.2.x 升到 2.2.3，可以用固定 tag 的安装页：
+
+```
+https://fastly.jsdelivr.net/gh/Dragonzhi/NWAFU-Online-teaching-evaluation@v2.2.3/nwafu-eval.user.js
+```
+
+在浏览器打开上面的链接，Tampermonkey 会弹出安装/更新页，点“更新”即可。之后自动更新会走 `@main`；jsDelivr 对分支有缓存，刚发布的版本可能要等几分钟到几小时。fastly 节点也不通时，可以试 `gcore.jsdelivr.net`，或者直接用本地 `nwafu-eval.user.js` 覆盖。
 
 ## 开发与测试
 
